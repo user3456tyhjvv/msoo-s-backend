@@ -172,16 +172,26 @@ const handleTransactionStatus = async (req: VercelRequest, res: VercelResponse) 
 };
 
 // --- Main Serverless Function Handler ---
+// --- Main Serverless Function Handler ---
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // --- CORS ---
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', process.env.APP_BASE_URL || 'http://localhost:5173'); // Adjust for production
+    res.setHeader('Access-Control-Allow-Origin', process.env.APP_BASE_URL || 'http://localhost:5173');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
-    
-    // Simple router based on the request URL path
-    const url = new URL(req.url!, `http://${req.headers.host}`);
+
+    // --- Routing ---
+    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     const path = url.pathname;
+
+    if (path === '/api' || path === '/api/') {
+        return res.status(200).send("✅ Backend is working 🚀");
+    }
+
+    if (path.endsWith('/health') && req.method === 'GET') {
+        return res.json({ status: 'ok', message: 'Backend is healthy' });
+    }
 
     if (path.endsWith('/pesapal/order') && req.method === 'POST') {
         return handleOrder(req, res);
@@ -192,6 +202,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path.endsWith('/pesapal/transaction-status') && req.method === 'GET') {
         return handleTransactionStatus(req, res);
     }
-    
+
     return res.status(404).json({ message: 'Not Found' });
 }
