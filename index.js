@@ -27,14 +27,53 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- Middleware Configuration ---
+// Replace your current CORS setup with this:
+const allowedOrigins = [
+  'https://msoo-beddings-and-curtains.vercel.app',
+  'https://msoo-beddings-and-curtains-*.vercel.app',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: process.env.APP_BASE_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Clean the origin by removing any trailing hash/fragment
+    const cleanOrigin = origin.replace(/#.*$/, '');
+    
+    if (allowedOrigins.some(allowedOrigin => {
+      // Handle wildcard patterns
+      if (allowedOrigin.includes('*')) {
+        const basePattern = allowedOrigin.replace('*', '');
+        return cleanOrigin.startsWith(basePattern);
+      }
+      return cleanOrigin === allowedOrigin;
+    })) {
+      callback(null, cleanOrigin);
+    } else {
+      console.log('CORS blocked for origin:', origin, 'cleaned:', cleanOrigin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Add explicit OPTIONS handler
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.some(allowed => origin.replace(/#.*$/, '').includes(allowed.replace('*', '')))) {
+    res.setHeader('Access-Control-Allow-Origin', origin.replace(/#.*$/, ''));
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.status(204).end();
+});
 
 // --- Firebase Admin Initialization ---
 if (!admin.apps.length) {
