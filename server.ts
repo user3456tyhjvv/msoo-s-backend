@@ -174,7 +174,7 @@ const handleTransactionStatus = async (req: VercelRequest, res: VercelResponse) 
 // --- Main Serverless Function Handler ---
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust for production
+    res.setHeader('Access-Control-Allow-Origin', process.env.APP_BASE_URL || 'http://localhost:5173'); // Adjust for production
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
